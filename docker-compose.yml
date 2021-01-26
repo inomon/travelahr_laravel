@@ -1,0 +1,107 @@
+version: '3'
+
+networks:
+  laravel:
+
+services:
+  travelahr_site:
+    build:
+      context: .
+      dockerfile: nginx.dockerfile
+    container_name: travelahr_nginx
+    ports:
+      - 80:80
+    volumes:
+      - ./src:/var/www/html:delegated
+    depends_on:
+      - travelahr_php
+      - travelahr_redis
+      - travelahr_mysql
+      - travelahr_mailhog
+    networks:
+      - laravel
+
+  travelahr_mysql:
+    image: mysql:5.7.29
+    container_name: travelahr_mysql
+    restart: unless-stopped
+    tty: true
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: homestead
+      MYSQL_USER: homestead
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: secret
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - laravel
+
+  travelahr_php:
+    build:
+      context: .
+      dockerfile: php.dockerfile
+    container_name: travelahr_php
+    volumes:
+      - ./src:/var/www/html:delegated
+    networks:
+      - laravel
+
+  travelahr_redis:
+    image: redis:alpine
+    container_name: travelahr_redis
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    networks:
+      - laravel
+
+  travelahr_composer:
+    build:
+      context: .
+      dockerfile: composer.dockerfile
+    container_name: travelahr_composer
+    volumes:
+      - ./src:/var/www/html
+    working_dir: /var/www/html
+    depends_on:
+      - travelahr_php
+    user: laravel
+    entrypoint: ['composer', '--ignore-platform-reqs']
+    networks:
+      - laravel
+
+  travelahr_npm:
+    image: node:13.7
+    container_name: travelahr_npm
+    volumes:
+      - ./src:/var/www/html
+    working_dir: /var/www/html
+    entrypoint: ['npm']
+    networks:
+      - laravel
+
+  travelahr_artisan:
+    build:
+      context: .
+      dockerfile: php.dockerfile
+    container_name: travelahr_artisan
+    volumes:
+      - ./src:/var/www/html:delegated
+    depends_on:
+      - travelahr_mysql
+    working_dir: /var/www/html
+    user: laravel
+    entrypoint: ['php', '/var/www/html/artisan']
+    networks:
+      - laravel
+
+  travelahr_mailhog:
+    image: mailhog/mailhog:latest
+    container_name: travelahr_mailhog
+    ports:
+      - 1025:1025
+      - 8025:8025
+    networks:
+      - laravel
