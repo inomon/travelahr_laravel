@@ -13,6 +13,5 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', 'App\Http\Controllers\TravelController@home');
+Route::get('/go-travel', 'App\Http\Controllers\TravelController@go');
